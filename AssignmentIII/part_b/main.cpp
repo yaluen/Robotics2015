@@ -36,10 +36,17 @@ int main(int argc, char **argv) {
 	// Duplicate the source iamge.
 	WorkImage = SrcImage.clone();
 
+
+
+
 	//Extract the contour of
 	/* If you're familiar with OpenCV, findContours() will be a better way.*/
 	GaussianBlur(WorkImage, WorkImage, Size( 5, 5), 0, 0);
 	threshold(WorkImage, WorkImage, 160, 255, THRESH_BINARY);
+	// Not sure what is the output... because put ONE threshold on 3 channel picture????????????
+	// Or maybe it's not a RGB picture?
+
+
 
 
 	//	// Opening
@@ -53,6 +60,9 @@ int main(int argc, char **argv) {
 
 
 
+
+
+//	for testing, draw a small picture:
 //	Mat testImage(4,2,CV_8UC3, Scalar::all(0));
 
 //	testImage.at<Vec3b>(0,0)[0] = 255;
@@ -79,9 +89,13 @@ int main(int argc, char **argv) {
 	float xc, yc, m11, m20, m02, theta;
 	xc = calculateMoment(WorkImage, 1, 0) / calculateMoment(WorkImage, 0, 0);
 	yc = calculateMoment(WorkImage, 0, 1) / calculateMoment(WorkImage, 0, 0);
+
+
 	cout << "xc, yc = " << xc << " " << yc << endl;
 	cout << "h, w = " << WorkImage.rows << " " << WorkImage.cols << endl;
 	cout << "xc, yc = " << xc / (float)WorkImage.rows << " " << yc / (float)WorkImage.cols << endl;
+
+
 	m11 = calculateCentralMoment(WorkImage, 1, 1, xc, yc);
 	m20 = calculateCentralMoment(WorkImage, 2, 0, xc, yc);
 	m02 = calculateCentralMoment(WorkImage, 0, 2, xc, yc);
@@ -92,7 +106,8 @@ int main(int argc, char **argv) {
 	{
 		for (int j = -2; j <= 2; j++)
 		{
-			for (int k = 0; k < 1; k++)
+			// For each chanel.... What's going on?????????????
+			for (int k = 0; k < 3; k++)
 			{
 				WorkImage.at<Vec3b>((int)xc + i, (int)yc + j)[k] = 0;
 			}
@@ -112,11 +127,6 @@ float calculateMoment(Mat Image, float a, float b)
 	int height = Image.rows;
 	int width  = Image.cols;
 	float i, j;
-//	Mat B (height, width, CV_64FC3, Scalar::all(0));
-//	Vec3b value = Image.at<Vec3b>((int)(height * 0.7), (int)(width * 0.5));
-//	cout << value << endl;
-//	value = Image.at<Vec3b>((int)(height * 0.6), (int)(width * 0.4));
-//	cout << value << endl;
 	
 	for (i = 0; i < height; i+= 1)
 	{

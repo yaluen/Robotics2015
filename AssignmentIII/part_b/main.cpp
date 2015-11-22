@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 
 	// Create windows for debug.
 	namedWindow("SrcImage", WINDOW_AUTOSIZE);
-	namedWindow("WorkImage", WINDOW_AUTOSIZE);
+	//namedWindow("WorkImage", WINDOW_AUTOSIZE);
 
 	// Show the source image.
 
@@ -36,85 +36,145 @@ int main(int argc, char **argv) {
 	// Duplicate the source iamge.
 	WorkImage = SrcImage.clone();
 
+	/* -----TEST CODE PULLED FROM OPENCV----- */
+	Mat canny_output;
+	vector<vector<Point> > contours;
+	vector<Vec4i> hierarchy;
+	int thresh = 200;
+	int max_thresh = 255;
+	RNG rng(12345);
+
+	/// Detect edges using canny
+	Canny(WorkImage, canny_output, thresh, thresh * 2, 3);
+	/// Find contours
+	findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+
+	/// Get the moments
+	vector<Moments> mu(contours.size());
+	for (int i = 0; i < contours.size(); i++)
+	{
+		mu[i] = moments(contours[i], false);
+	}
+
+	///  Get the mass centers (aka centroid):
+	vector<Point2f> mc(contours.size());
+	for (int i = 0; i < contours.size(); i++)
+	{
+		mc[i] = Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 / mu[i].m00);
+	}
+
+	/// Draw contours
+	Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
+	for (int i = 0; i< contours.size(); i++)
+	{
+		Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+		drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
+		circle(drawing, mc[i], 4, color, -1, 8, 0);
+	}
+
+	/// Show in a window
+	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
+	imshow("Contours", drawing);
+
+	/// Calculate the area with the moments 00 and compare with the result of the OpenCV function
+	printf("\t Info: Area and Contour Length \n");
+	for (int i = 0; i< contours.size(); i++)
+	{
+		printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", i, mu[i].m00, contourArea(contours[i]), arcLength(contours[i], true));
+		Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+		drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
+		circle(drawing, mc[i], 4, color, -1, 8, 0);
+	}
 
 
+	// Calculate the principal angle using the central moments
+	// Central moments can be retrieved from moments (mu) by: mu[i].mu20, mu[i].mu11, etc
+	// So we should be able to get the principal angle like so:
+	for (int i = 0; i < contours.size; i++)
+	{
+		float theta;
+		theta = 0.5 * atan2(2 * mu[i].m11, mu[i].m20 - mu[i].m02);
+		cout << "theta = " << theta * 180.0 / 3.14 << endl << endl;
+	}
+	
+	// TODO: Now, we just need to figure out which contours we actually want
 
 	//Extract the contour of
 	/* If you're familiar with OpenCV, findContours() will be a better way.*/
-	GaussianBlur(WorkImage, WorkImage, Size( 5, 5), 0, 0);
-	threshold(WorkImage, WorkImage, 160, 255, THRESH_BINARY);
-	// Not sure what is the output... because put ONE threshold on 3 channel picture????????????
-	// Or maybe it's not a RGB picture?
-
-
-
-
-	//	// Opening
-	//	erode(WorkImage, WorkImage, Mat());
-	//	dilate(WorkImage, WorkImage, Mat());
-
-	//	// Duplicate the working iamge.
-		ComImage = WorkImage.clone();
-
-	// Show the working image after preprocessing.
-
-
-
-
-
-//	for testing, draw a small picture:
-//	Mat testImage(4,2,CV_8UC3, Scalar::all(0));
-
-//	testImage.at<Vec3b>(0,0)[0] = 255;
-//	testImage.at<Vec3b>(0,0)[1] = 255;
-//	testImage.at<Vec3b>(0,0)[2] = 255;
-
-//	testImage.at<Vec3b>(1,1)[0] = 255;
-//	testImage.at<Vec3b>(1,1)[1] = 255;
-//	testImage.at<Vec3b>(1,1)[2] = 255;
-
-//	testImage.at<Vec3b>(2,1)[0] = 255;
-//	testImage.at<Vec3b>(2,1)[1] = 255;
-//	testImage.at<Vec3b>(2,1)[2] = 255;
-
-//	testImage.at<Vec3b>(3,1)[0] = 255;
-//	testImage.at<Vec3b>(3,1)[1] = 255;
-//	testImage.at<Vec3b>(3,1)[2] = 255;
-
-//	WorkImage = testImage.clone();
-//	cout << WorkImage << endl;
-
-
-
-	float xc, yc, m11, m20, m02, theta;
-	xc = calculateMoment(WorkImage, 1, 0) / calculateMoment(WorkImage, 0, 0);
-	yc = calculateMoment(WorkImage, 0, 1) / calculateMoment(WorkImage, 0, 0);
-
-
-	cout << "xc, yc = " << xc << " " << yc << endl;
-	cout << "h, w = " << WorkImage.rows << " " << WorkImage.cols << endl;
-	cout << "xc, yc = " << xc / (float)WorkImage.rows << " " << yc / (float)WorkImage.cols << endl;
-
-
-	m11 = calculateCentralMoment(WorkImage, 1, 1, xc, yc);
-	m20 = calculateCentralMoment(WorkImage, 2, 0, xc, yc);
-	m02 = calculateCentralMoment(WorkImage, 0, 2, xc, yc);
-	theta = 0.5 * atan2(2*m11, m20 - m02);
-	cout << "theta = " << theta * 180.0 / 3.14 << endl << endl;
-
-	for (int i = -2; i <= 2; i++)
-	{
-		for (int j = -2; j <= 2; j++)
-		{
-			// For each chanel.... What's going on?????????????
-			for (int k = 0; k < 3; k++)
-			{
-				WorkImage.at<Vec3b>((int)xc + i, (int)yc + j)[k] = 0;
-			}
-		}
-	}
-
-	imshow("WorkImage", WorkImage);
+//	GaussianBlur(WorkImage, WorkImage, Size( 5, 5), 0, 0);
+//	threshold(WorkImage, WorkImage, 160, 255, THRESH_BINARY);
+//	// Not sure what is the output... because put ONE threshold on 3 channel picture????????????
+//	// Or maybe it's not a RGB picture?
+//
+//
+//
+//
+//	//	// Opening
+//	//	erode(WorkImage, WorkImage, Mat());
+//	//	dilate(WorkImage, WorkImage, Mat());
+//
+//	//	// Duplicate the working iamge.
+//		ComImage = WorkImage.clone();
+//
+//	// Show the working image after preprocessing.
+//
+//
+//
+//
+//
+////	for testing, draw a small picture:
+////	Mat testImage(4,2,CV_8UC3, Scalar::all(0));
+//
+////	testImage.at<Vec3b>(0,0)[0] = 255;
+////	testImage.at<Vec3b>(0,0)[1] = 255;
+////	testImage.at<Vec3b>(0,0)[2] = 255;
+//
+////	testImage.at<Vec3b>(1,1)[0] = 255;
+////	testImage.at<Vec3b>(1,1)[1] = 255;
+////	testImage.at<Vec3b>(1,1)[2] = 255;
+//
+////	testImage.at<Vec3b>(2,1)[0] = 255;
+////	testImage.at<Vec3b>(2,1)[1] = 255;
+////	testImage.at<Vec3b>(2,1)[2] = 255;
+//
+////	testImage.at<Vec3b>(3,1)[0] = 255;
+////	testImage.at<Vec3b>(3,1)[1] = 255;
+////	testImage.at<Vec3b>(3,1)[2] = 255;
+//
+////	WorkImage = testImage.clone();
+////	cout << WorkImage << endl;
+//
+//
+//
+//	float xc, yc, m11, m20, m02, theta;
+//	xc = calculateMoment(WorkImage, 1, 0) / calculateMoment(WorkImage, 0, 0);
+//	yc = calculateMoment(WorkImage, 0, 1) / calculateMoment(WorkImage, 0, 0);
+//
+//
+//	cout << "xc, yc = " << xc << " " << yc << endl;
+//	cout << "h, w = " << WorkImage.rows << " " << WorkImage.cols << endl;
+//	cout << "xc, yc = " << xc / (float)WorkImage.rows << " " << yc / (float)WorkImage.cols << endl;
+//
+//
+//	m11 = calculateCentralMoment(WorkImage, 1, 1, xc, yc);
+//	m20 = calculateCentralMoment(WorkImage, 2, 0, xc, yc);
+//	m02 = calculateCentralMoment(WorkImage, 0, 2, xc, yc);
+//	theta = 0.5 * atan2(2*m11, m20 - m02);
+//	cout << "theta = " << theta * 180.0 / 3.14 << endl << endl;
+//
+//	for (int i = -2; i <= 2; i++)
+//	{
+//		for (int j = -2; j <= 2; j++)
+//		{
+//			// For each chanel.... What's going on?????????????
+//			for (int k = 0; k < 3; k++)
+//			{
+//				WorkImage.at<Vec3b>((int)xc + i, (int)yc + j)[k] = 0;
+//			}
+//		}
+//	}
+//
+//	imshow("WorkImage", WorkImage);
 	waitKey(0);
 
 	return 0;

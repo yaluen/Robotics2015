@@ -27,20 +27,27 @@ int main(int argc, char **argv) {
 	// Create windows for debug.
 	namedWindow("SrcImage", WINDOW_AUTOSIZE);
 	//namedWindow("WorkImage", WINDOW_AUTOSIZE);
+	if (SrcImage.channels()>1)
+		cvtColor(SrcImage, SrcImage, CV_BGR2GRAY);
+	//else gray = original;
+	
+	blur(SrcImage, SrcImage, Size(3, 3));
+
 
 	// Show the source image.
-
 	imshow("SrcImage", SrcImage);
 	waitKey(0);
 
 	// Duplicate the source iamge.
 	WorkImage = SrcImage.clone();
 
-	/* -----TEST CODE PULLED FROM OPENCV----- */
+
 	Mat canny_output;
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
-	int thresh = 200;
+	// For images 1-3
+	int thresh = 100;
+	// For image 4
 	int max_thresh = 255;
 	RNG rng(12345);
 
@@ -76,25 +83,30 @@ int main(int argc, char **argv) {
 	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
 	imshow("Contours", drawing);
 
-	/// Calculate the area with the moments 00 and compare with the result of the OpenCV function
-	printf("\t Info: Area and Contour Length \n");
-	for (int i = 0; i< contours.size(); i++)
-	{
-		printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", i, mu[i].m00, contourArea(contours[i]), arcLength(contours[i], true));
-		Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-		drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
-		circle(drawing, mc[i], 4, color, -1, 8, 0);
-	}
+	// Debug use
+	///// Calculate the area with the moments 00 and compare with the result of the OpenCV function
+	//printf("\t Info: Area and Contour Length \n");
+	//for (int i = 0; i< contours.size(); i++)
+	//{
+	//	printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", i, mu[i].m00, contourArea(contours[i]), arcLength(contours[i], true));
+	//	Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+	//	drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
+	//	circle(drawing, mc[i], 4, color, -1, 8, 0);
+	//}
 
 
 	// Calculate the principal angle using the central moments
 	// Central moments can be retrieved from moments (mu) by: mu[i].mu20, mu[i].mu11, etc
 	// So we should be able to get the principal angle like so:
-	for (int i = 0; i < contours.size; i++)
+	for (int i = 0; i < contours.size(); i++)
 	{
 		float theta;
-		theta = 0.5 * atan2(2 * mu[i].m11, mu[i].m20 - mu[i].m02);
-		cout << "theta = " << theta * 180.0 / 3.14 << endl << endl;
+		if (mu[i].m00 > 20 && mu[i].m00 < 100000)
+		{
+			theta = 0.5 * atan2(2 * mu[i].m11, mu[i].m20 - mu[i].m02);
+			//cout << "theta = " << (theta * 180.0 / 3.14) << endl << endl;
+			cout << "Number: " << i << " " << mc[i].x << " " << mc[i].y << " " << (theta * 180.0 / 3.14) << endl << endl;
+		}
 	}
 	
 	// TODO: Now, we just need to figure out which contours we actually want

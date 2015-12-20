@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
 
 	// Show the source image.
-	//imshow("SrcImage", SrcImage);
+	imshow("SrcImage", SrcImage);
 	//waitKey(0);
 
 	// Duplicate the source iamge.
@@ -46,10 +46,14 @@ int main(int argc, char **argv) {
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 	// For images 1-3
+	int x_border = 0;
+	int y_border = 0;
+	int x_border_max = 700;
+	int y_border_max = 700;
 	int thresh = 100;
 	// For image 4
 	int max_thresh = 255;
-	//RNG rng(12345);
+	RNG rng(12345);
 
 	/// Detect edges using canny
 	Canny(WorkImage, canny_output, thresh, thresh * 2, 3);
@@ -71,28 +75,34 @@ int main(int argc, char **argv) {
 	}
 
 	/// Draw contours
-	/*Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
+	Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
 	for (int i = 0; i< contours.size(); i++)
 	{
-		Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-		drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
-		circle(drawing, mc[i], 4, color, -1, 8, 0);
+		if (mc[i].x > x_border && mc[i].y > y_border && mc[i].x < x_border_max && mc[i].y < y_border_max)
+		{
+			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+			drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
+			circle(drawing, mc[i], 4, color, -1, 8, 0);
+		}
 	}
 
 	/// Show in a window
 	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
-	imshow("Contours", drawing);*/
+	imshow("Contours", drawing);
 
 	// Debug use
-	///// Calculate the area with the moments 00 and compare with the result of the OpenCV function
-	//printf("\t Info: Area and Contour Length \n");
-	//for (int i = 0; i< contours.size(); i++)
-	//{
-	//	printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", i, mu[i].m00, contourArea(contours[i]), arcLength(contours[i], true));
-	//	Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-	//	drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
-	//	circle(drawing, mc[i], 4, color, -1, 8, 0);
-	//}
+	/// Calculate the area with the moments 00 and compare with the result of the OpenCV function
+	printf("\t Info: Area and Contour Length \n");
+	for (int i = 0; i< contours.size(); i++)
+	{
+		if (mc[i].x > x_border && mc[i].y > y_border && mc[i].x < x_border_max && mc[i].y < y_border_max)
+		{
+			printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", i, mu[i].m00, contourArea(contours[i]), arcLength(contours[i], true));
+			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+			drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
+			circle(drawing, mc[i], 4, color, -1, 8, 0);
+		}
+	}
 
 
 	// Calculate the principal angle using the central moments
@@ -102,7 +112,9 @@ int main(int argc, char **argv) {
 	{
 		float theta;
 		// Further filter of noise: No area too small, and no border of the entire picture.
-		if (mu[i].m00 > 20 && mu[i].m00 < 100000)
+		/*if (mu[i].m00 > 20 && mu[i].m00 < 100000 && (mc[i].x > x_border && mc[i].y > y_border && mc[i].x < x_border_max && mc[i].y < y_border_max))
+		{*/
+		if (mc[i].x > x_border && mc[i].y > y_border && mc[i].x < x_border_max && mc[i].y < y_border_max)
 		{
 			theta = 0.5 * atan2(2 * mu[i].m11, mu[i].m20 - mu[i].m02);
 			//cout << "theta = " << (theta * 180.0 / 3.14) << endl << endl;
